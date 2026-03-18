@@ -3406,19 +3406,25 @@ static unsigned long X509NameHash(WOLFSSL_X509_NAME* name,
     WOLFSSL_ENTER("X509NameHash");
 
     if (name == NULL) {
-        WOLFSSL_ERROR_MSG("WOLFSSL_X509_NAME pointer was NULL");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("WOLFSSL_X509_NAME pointer was NULL");
+#endif
         return 0;
     }
 
     if (name->sz == 0) {
-        WOLFSSL_ERROR_MSG("Nothing to hash in WOLFSSL_X509_NAME");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Nothing to hash in WOLFSSL_X509_NAME");
+#endif
         return 0;
     }
 
     size = wolfSSL_i2d_X509_NAME_canon(name, &canonName);
 
     if (size <= 0 || canonName == NULL) {
-        WOLFSSL_ERROR_MSG("wolfSSL_i2d_X509_NAME_canon error");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("wolfSSL_i2d_X509_NAME_canon error");
+#endif
         return 0;
     }
 
@@ -3432,10 +3438,14 @@ static unsigned long X509NameHash(WOLFSSL_X509_NAME* name,
                 ((unsigned long)digest[0]));
     }
     else if (rc == WC_NO_ERR_TRACE(HASH_TYPE_E)) {
-        WOLFSSL_ERROR_MSG("Hash function not compiled in");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Hash function not compiled in");
+#endif
     }
     else {
-        WOLFSSL_ERROR_MSG("Error hashing name");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Error hashing name");
+#endif
     }
 
     XFREE(canonName, NULL, DYNAMIC_TYPE_OPENSSL);
@@ -3467,7 +3477,9 @@ unsigned long wolfSSL_X509_NAME_hash(WOLFSSL_X509_NAME* name)
 unsigned long wolfSSL_X509_subject_name_hash(const WOLFSSL_X509* x509)
 {
     if (x509 == NULL) {
-        WOLFSSL_ERROR_MSG("WOLFSSL_X509 pointer was NULL");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("WOLFSSL_X509 pointer was NULL");
+#endif
         return 0;
     }
 
@@ -3477,7 +3489,9 @@ unsigned long wolfSSL_X509_subject_name_hash(const WOLFSSL_X509* x509)
     return X509NameHash((WOLFSSL_X509_NAME*) &x509->subject,
                         WC_HASH_TYPE_SHA256);
     #else
-    WOLFSSL_ERROR_MSG("Hash function not compiled in");
+    #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Hash function not compiled in");
+#endif
     return 0;
     #endif
 }
@@ -3485,7 +3499,9 @@ unsigned long wolfSSL_X509_subject_name_hash(const WOLFSSL_X509* x509)
 unsigned long wolfSSL_X509_issuer_name_hash(const WOLFSSL_X509* x509)
 {
     if (x509 == NULL) {
-        WOLFSSL_ERROR_MSG("WOLFSSL_X509 pointer was NULL");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("WOLFSSL_X509 pointer was NULL");
+#endif
         return 0;
     }
 
@@ -3495,7 +3511,9 @@ unsigned long wolfSSL_X509_issuer_name_hash(const WOLFSSL_X509* x509)
     return X509NameHash((WOLFSSL_X509_NAME*) &x509->issuer,
                         WC_HASH_TYPE_SHA256);
     #else
-    WOLFSSL_ERROR_MSG("Hash function not compiled in");
+    #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Hash function not compiled in");
+#endif
     return 0;
     #endif
 }

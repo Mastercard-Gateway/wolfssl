@@ -32,6 +32,7 @@
 
 #ifndef WOLFCRYPT_ONLY
 
+
 #if defined(HAVE_ERRNO_H) && defined(WOLFSSL_NO_SOCK) && \
     (defined(USE_WOLFSSL_IO) || defined(HAVE_HTTP_CLIENT))
     /* error codes are needed for TranslateIoReturnCode() and
@@ -49,6 +50,38 @@
 #include <wolfssl/internal.h>
 #include <wolfssl/error-ssl.h>
 #include <wolfssl/wolfio.h>
+
+#ifdef WOLFSSL_SGX
+int ft_sgx_send(int sockfd, void *buf, size_t size, int flags){
+    long *retval = (long*)XMALLOC(sizeof(long)*256,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    //*retval = -88;
+    char *malloc_buf = (char *)XMALLOC(size, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    memcpy(malloc_buf,buf,size);
+    //memset(malloc_buf,9,size);
+    ocall_send(sockfd,size,flags,buf,retval);
+    XFREE(malloc_buf, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    int ret = (int)*retval;
+    XFREE(retval,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    return ret;
+}
+
+int ft_sgx_recv(int sockfd, void *buf, size_t size,int flags){
+    long *retval = (long*)XMALLOC(sizeof(long)*256,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    //*retval = 89;
+    ocall_recv(sockfd,flags,buf,size,retval);
+    int ret = (int)*retval;
+    XFREE(retval,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    return ret;
+}
+
+int ft_ocall_inet_pton(int af, const char *restrict src, void *restrict dst) {
+    long *retval = (long*)XMALLOC(sizeof(long)*256,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    ocall_inet_pton(af, src, dst, retval);
+    XFREE(retval,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    int ret = (int)*retval;
+    return ret;
+}
+#endif
 
 #ifdef NUCLEUS_PLUS_2_3
 /* Holds last Nucleus networking error number */
@@ -149,6 +182,16 @@ static WC_INLINE int wolfSSL_LastError(int err, SOCKET_T sd)
 {
     (void)sd;
 
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("Last Error\0",10);
+    ocall_eprintln_i64(err);
+    int *retval = (int*)XMALLOC(sizeof(int),NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    memset(retval,0,sizeof(int));
+    int ret = ocall_get_last_errno(retval);
+    int sgx_err  = (int)(retval[0]);
+    XFREE(retval,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    return sgx_err;
+#endif
     if (err > 0)
         return 0;
 
@@ -189,6 +232,10 @@ static WC_INLINE int wolfSSL_LastError(int err, SOCKET_T sd)
  */
 static int TranslateIoReturnCode(int err, SOCKET_T sd, int direction)
 {
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("In TIO\0",6);
+    ocall_eprintln_i64(err);
+#endif
 #ifdef  _WIN32
     size_t errstr_offset;
     char errstr[WOLFSSL_STRERROR_BUFFER_SIZE];
@@ -196,14 +243,38 @@ static int TranslateIoReturnCode(int err, SOCKET_T sd, int direction)
 
 #if defined(FREESCALE_MQX) || defined(FREESCALE_KSDK_MQX)
     if (err > 0)
+    {
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("ret e1\0",7);
+    ocall_eprintln_i64(err);
+#endif
         return err;
+    }
 #else
-    if (err >= 0)
+    if (err >= 0){
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("ret e1\0",7);
+    ocall_eprintln_i64(err);
+#endif
         return err;
+    }
 #endif
 
     err = wolfSSL_LastError(err, sd);
-
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("Last Err\0",8);
+    ocall_eprintln_i64(err);
+#endif
+#ifdef WOLFSSL_SGX
+    if (err == SOCKET_EWOULDBLOCK){
+        ocall_eprintln_message("BLOCK\0",6);
+        ocall_eprintln_i64(WOLFSSL_CBIO_ERR_WANT_READ);
+    }
+    if (err == SOCKET_EAGAIN){
+        ocall_eprintln_message("AGAIN\0",6);
+        ocall_eprintln_i64(WOLFSSL_CBIO_ERR_WANT_READ);
+    }
+#endif
 #if SOCKET_EWOULDBLOCK != SOCKET_EAGAIN
     if ((err == SOCKET_EWOULDBLOCK) || (err == SOCKET_EAGAIN))
 #else
@@ -211,6 +282,10 @@ static int TranslateIoReturnCode(int err, SOCKET_T sd, int direction)
 #endif
     {
         WOLFSSL_MSG("\tWould block");
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("would block\0",11);
+    ocall_eprintln_i64(err);
+#endif
         if (direction == SOCKET_SENDING)
             return WOLFSSL_CBIO_ERR_WANT_WRITE;
         else if (direction == SOCKET_RECEIVING)
@@ -222,6 +297,10 @@ static int TranslateIoReturnCode(int err, SOCKET_T sd, int direction)
 #ifdef SOCKET_ETIMEDOUT
     else if (err == SOCKET_ETIMEDOUT) {
         WOLFSSL_MSG("\tTimed out");
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("timed out\0",9);
+    ocall_eprintln_i64(err);
+#endif
         if (direction == SOCKET_SENDING)
             return WOLFSSL_CBIO_ERR_WANT_WRITE;
         else if (direction == SOCKET_RECEIVING)
@@ -233,18 +312,34 @@ static int TranslateIoReturnCode(int err, SOCKET_T sd, int direction)
 
     else if (err == SOCKET_ECONNRESET) {
         WOLFSSL_MSG("\tConnection reset");
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("con reset\0",9);
+    ocall_eprintln_i64(err);
+#endif
         return WOLFSSL_CBIO_ERR_CONN_RST;
     }
     else if (err == SOCKET_EINTR) {
         WOLFSSL_MSG("\tSocket interrupted");
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("soc inter\0",9);
+    ocall_eprintln_i64(err);
+#endif
         return WOLFSSL_CBIO_ERR_ISR;
     }
     else if (err == SOCKET_EPIPE) {
         WOLFSSL_MSG("\tBroken pipe");
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("broken pi\0",9);
+    ocall_eprintln_i64(err);
+#endif
         return WOLFSSL_CBIO_ERR_CONN_CLOSE;
     }
     else if (err == SOCKET_ECONNABORTED) {
         WOLFSSL_MSG("\tConnection aborted");
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("con abort\0",9);
+    ocall_eprintln_i64(err);
+#endif
         return WOLFSSL_CBIO_ERR_CONN_CLOSE;
     }
 
@@ -260,7 +355,13 @@ static int TranslateIoReturnCode(int err, SOCKET_T sd, int direction)
         NULL);
     WOLFSSL_MSG(errstr);
 #else
+#ifndef WOLFSSL_SGX
     WOLFSSL_MSG_EX("\tGeneral error: %d", err);
+#endif
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("gen errorr\0",9);
+    ocall_eprintln_i64(err);
+#endif
 #endif
     return WOLFSSL_CBIO_ERR_GENERAL;
 }
@@ -1179,8 +1280,28 @@ int wolfIO_Recv(SOCKET_T sd, char *buf, int sz, int rdFlags)
 {
     int recvd;
 
+#ifndef WOLFSSL_SGX
     recvd = (int)RECV_FUNCTION(sd, buf, (size_t)sz, rdFlags);
     recvd = TranslateIoReturnCode(recvd, sd, SOCKET_RECEIVING);
+#else
+    int flags = rdFlags;
+    int sockfd = sd;
+    size_t size = sz;
+
+    int *retval = (int*)XMALLOC(sizeof(int),NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    memset(retval,0,sizeof(int));
+    //char *malloc_buf = (char *)XMALLOC(size, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    //memset(malloc_buf,0,size);
+    int ret = ocall_recv(retval,sockfd,size,flags,buf);
+    recvd  = (int)(retval[0]);
+    XFREE(retval,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    ocall_eprintln_message("Before Translate\0",17);
+    ocall_eprintln_i64(recvd);
+    recvd = TranslateIoReturnCode(recvd, sockfd, SOCKET_RECEIVING);
+    ocall_eprintln_message("After  Translate\0",17);
+    ocall_eprintln_i64(recvd);
+    return recvd;
+#endif
 
     return recvd;
 }
@@ -1189,8 +1310,29 @@ int wolfIO_Send(SOCKET_T sd, char *buf, int sz, int wrFlags)
 {
     int sent;
 
+#ifndef WOLFSSL_SGX
     sent = (int)SEND_FUNCTION(sd, buf, (size_t)sz, wrFlags);
     sent = TranslateIoReturnCode(sent, sd, SOCKET_SENDING);
+#else
+    int flags = wrFlags;
+    int sockfd = sd;
+    size_t size = sz;
+
+    int *retval = (int*)XMALLOC(sizeof(int),NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    memset(retval,0,sizeof(int));
+    char *malloc_buf = (char *)XMALLOC(size, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    memcpy(malloc_buf,buf,size);
+    int ret = ocall_send(retval,sockfd,size,flags,buf);
+    XFREE(malloc_buf, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    sent = (int)(retval[0]);
+    XFREE(retval,NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    ocall_eprintln_message("Before Translate\0",17);
+    ocall_eprintln_i64(sent);
+    sent = TranslateIoReturnCode(sent, sockfd, SOCKET_SENDING);
+    ocall_eprintln_message("After  Translate\0",17);
+    ocall_eprintln_i64(sent);
+    return sent;
+#endif
 
     return sent;
 }

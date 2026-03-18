@@ -95,17 +95,23 @@ WOLFSSL_CERT_MANAGER* wolfSSL_CertManagerNew_ex(void* heap)
     }
     else {
         /* Some systems may have heap in unexpected segments. (IRAM vs DRAM) */
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("heap param = %p", heap);
+#endif
     }
+#ifndef WOLFSSL_SGX
     WOLFSSL_MSG_EX("DYNAMIC_TYPE_CERT_MANAGER Allocating = %d bytes",
                     (word32)sizeof(WOLFSSL_CERT_MANAGER));
+#endif
 
     /* Allocate memory for certificate manager. */
     cm = (WOLFSSL_CERT_MANAGER*)XMALLOC(sizeof(WOLFSSL_CERT_MANAGER), heap,
         DYNAMIC_TYPE_CERT_MANAGER);
     if (cm == NULL) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("XMALLOC failed to allocate WOLFSSL_CERT_MANAGER %d "
                     "bytes.", (int)sizeof(WOLFSSL_CERT_MANAGER));
+#endif
         err = 1;
     }
     if (!err) {

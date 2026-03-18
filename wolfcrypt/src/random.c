@@ -31,7 +31,7 @@ This library contains implementation for the random number generator.
 
 #include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/wolfcrypt/error-crypt.h>
-#if defined(DEBUG_WOLFSSL)
+#if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
     #include <wolfssl/wolfcrypt/logging.h>
 #endif
 
@@ -1671,8 +1671,10 @@ static int _InitRng(WC_RNG* rng, byte* nonce, word32 nonceSz,
 
     ret = wc_RNG_HealthTestLocal(0, rng->heap, devId);
     if (ret != 0) {
-        #if defined(DEBUG_WOLFSSL)
+        #ifndef WOLFSSL_SGX
+        #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
         WOLFSSL_MSG_EX("wc_RNG_HealthTestLocal failed err = %d", ret);
+        #endif
         #endif
         ret = DRBG_CONT_FAILURE;
     }
@@ -1691,9 +1693,11 @@ static int _InitRng(WC_RNG* rng, byte* nonce, word32 nonceSz,
                 (struct DRBG*)XMALLOC(sizeof(DRBG_internal), rng->heap,
                                                           DYNAMIC_TYPE_RNG);
         if (rng->drbg == NULL) {
-    #if defined(DEBUG_WOLFSSL)
+        #ifndef WOLFSSL_SGX
+    #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
             WOLFSSL_MSG_EX("_InitRng XMALLOC failed to allocate %d bytes",
                            sizeof(DRBG_internal));
+    #endif
     #endif
             ret = MEMORY_E;
             rng->status = DRBG_FAILED;
@@ -1703,8 +1707,10 @@ static int _InitRng(WC_RNG* rng, byte* nonce, word32 nonceSz,
 #endif /* WOLFSSL_NO_MALLOC or WOLFSSL_STATIC_MEMORY */
 
         if (ret != 0) {
-#if defined(DEBUG_WOLFSSL)
+        #ifndef WOLFSSL_SGX
+#if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
             WOLFSSL_MSG_EX("_InitRng failed. err = %d", ret);
+#endif
 #endif
         }
         else {
@@ -1724,8 +1730,10 @@ static int _InitRng(WC_RNG* rng, byte* nonce, word32 nonceSz,
             if (ret == 0)
                 ret = wc_RNG_TestSeed(seed, seedSz);
             else {
-    #if defined(DEBUG_WOLFSSL)
+        #ifndef WOLFSSL_SGX
+    #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
                 WOLFSSL_MSG_EX("wc_RNG_TestSeed failed... %d", ret);
+    #endif
     #endif
                 ret = DRBG_FAILURE;
                 rng->status = DRBG_FAILED;
@@ -2252,11 +2260,13 @@ static int wc_RNG_HealthTestLocal(int reseed, void* heap, int devId)
         const byte* seedB = seedB_data;
         const byte* outputB = outputB_data;
 #endif
-#if defined(DEBUG_WOLFSSL)
+        #ifndef WOLFSSL_SGX
+#if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
         WOLFSSL_MSG_EX("RNG_HEALTH_TEST_CHECK_SIZE = %d",
                         RNG_HEALTH_TEST_CHECK_SIZE);
         WOLFSSL_MSG_EX("sizeof(seedB_data)         = %d",
                         (int)sizeof(outputB_data));
+#endif
 #endif
         ret = wc_RNG_HealthTest_ex(0, NULL, 0,
                                    seedB, sizeof(seedB_data),
@@ -2264,16 +2274,20 @@ static int wc_RNG_HealthTestLocal(int reseed, void* heap, int devId)
                                    check, RNG_HEALTH_TEST_CHECK_SIZE,
                                    heap, devId);
         if (ret != 0) {
-            #if defined(DEBUG_WOLFSSL)
+        #ifndef WOLFSSL_SGX
+            #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
             WOLFSSL_MSG_EX("RNG_HealthTest failed: err = %d", ret);
+            #endif
             #endif
         }
         else {
             ret = ConstantCompare(check, outputB,
                                 RNG_HEALTH_TEST_CHECK_SIZE);
             if (ret != 0) {
-                #if defined(DEBUG_WOLFSSL)
+        #ifndef WOLFSSL_SGX
+                #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
                 WOLFSSL_MSG_EX("Random ConstantCompare failed: err = %d", ret);
+                #endif
                 #endif
                 ret = -1;
             }
@@ -3628,7 +3642,7 @@ int wc_GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 
         int wc_GenerateSeed(OS_Seed* os, byte* output, word32 sz)
         {
-    #if defined(DEBUG_WOLFSSL)
+    #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
             WOLFSSL_ENTER("ESP8266 Random");
     #endif
             word32 rand;
@@ -4037,7 +4051,7 @@ int wc_GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 
     #ifndef NO_DEV_URANDOM /* way to disable use of /dev/urandom */
         os->fd = open("/dev/urandom", O_RDONLY);
-        #if defined(DEBUG_WOLFSSL)
+        #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
             WOLFSSL_MSG("opened /dev/urandom.");
         #endif
         if (os->fd == -1)
@@ -4045,13 +4059,13 @@ int wc_GenerateSeed(OS_Seed* os, byte* output, word32 sz)
         {
             /* may still have /dev/random */
             os->fd = open("/dev/random", O_RDONLY);
-    #if defined(DEBUG_WOLFSSL)
+    #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
             WOLFSSL_MSG("opened /dev/random.");
     #endif
             if (os->fd == -1)
                 return OPEN_RAN_E;
         }
-    #if defined(DEBUG_WOLFSSL)
+    #if defined(DEBUG_WOLFSSL) || !defined(WOLFSSL_SGX)
         WOLFSSL_MSG("rnd read...");
     #endif
         while (sz) {

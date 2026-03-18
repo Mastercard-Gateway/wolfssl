@@ -2348,15 +2348,19 @@ int wolfSSL_crypto_policy_init_ctx(WOLFSSL_CTX * ctx,
     level = wolfSSL_crypto_policy_get_level();
 
     if (level < 0 || level > 5) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("crypto_policy_init_ctx: invalid level: %d", level);
+#endif
         return BAD_FUNC_ARG;
     }
 
     /* Check requested method per security level. */
     if (wolfSSL_crypto_policy_method_allowed(method, level) != 0) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("crypto_policy_init_ctx: "
                        "method=%d, SECLEVEL=%d combination not allowed",
                        method->version.minor, level);
+#endif
         return CRYPTO_POLICY_FORBIDDEN;
     }
 
@@ -2459,9 +2463,11 @@ int wolfSSL_crypto_policy_init_ctx(WOLFSSL_CTX * ctx,
     if (minKeySz > 0) {
         #ifndef NO_DH
         if (minKeySz > MAX_DHKEY_SZ) {
+#ifndef WOLFSSL_SGX
             WOLFSSL_MSG_EX("crypto_policy_init_ctx: minKeySz=%d, "
                            "but MAX_DHKEY_SZ=%d",
                            minKeySz, MAX_DHKEY_SZ);
+#endif
             return CRYPTO_POLICY_FORBIDDEN;
         }
         ctx->minDhKeySz  = minKeySz;
@@ -2764,7 +2770,9 @@ int InitSSL_Ctx(WOLFSSL_CTX* ctx, WOLFSSL_METHOD* method, void* heap)
 #if defined(WOLFSSL_SYS_CRYPTO_POLICY)
     ret = wolfSSL_crypto_policy_init_ctx(ctx, method);
     if (ret != 0) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("crypto_policy_init_ctx returned %d", ret);
+#endif
         return ret;
     }
 #endif /* WOLFSSL_SYS_CRYPTO_POLICY */
@@ -7178,7 +7186,9 @@ int InitHandshakeHashes(WOLFSSL* ssl)
     ssl->hsHashes = (HS_Hashes*)XMALLOC(sizeof(HS_Hashes), ssl->heap,
                                                            DYNAMIC_TYPE_HASHES);
     if (ssl->hsHashes == NULL) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG("HS_Hashes Memory error");
+#endif
         return MEMORY_E;
     }
     XMEMSET(ssl->hsHashes, 0, sizeof(HS_Hashes));
@@ -7289,7 +7299,9 @@ int InitHandshakeHashesAndCopy(WOLFSSL* ssl, HS_Hashes* source,
 
     ret = InitHandshakeHashes(ssl);
     if (ret != 0) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("InitHandshakeHashes failed. err = %d", ret);
+#endif
         return ret;
     }
 
@@ -7772,7 +7784,9 @@ int InitSSL(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
 
     /* all done with init, now can return errors, call other stuff */
     if ((ret = ReinitSSL(ssl, ctx, writeDup)) != 0) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("ReinitSSL failed. err = %d", ret);
+#endif
         return ret;
     }
 
@@ -7806,7 +7820,9 @@ int InitSSL(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
         && ret != WC_NO_ERR_TRACE(NO_PRIVATE_KEY)
 #endif
         ) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("SetSSL_CTX failed. err = %d", ret);
+#endif
         return ret;
     }
     ssl->options.dtls = ssl->version.major == DTLS_MAJOR;
@@ -7821,7 +7837,9 @@ int InitSSL(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
     /* hsHashes */
     ret = InitHandshakeHashes(ssl);
     if (ret != 0) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("InitHandshakeHashes failed. err = %d", ret);
+#endif
         return ret;
     }
 
@@ -7864,8 +7882,11 @@ int InitSSL(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
 
     ssl->session = wolfSSL_NewSession(ssl->heap);
     if (ssl->session == NULL) {
+#ifndef WOLFSSL_SGX
+        WOLFSSL_MSG_EX("InitHandshakeHashes failed. err = %d", ret);
         WOLFSSL_MSG_EX("SSL Session Memory error. wolfSSL_NewSession "
                        "err = %d", ret);
+#endif
         return MEMORY_E;
     }
 #ifdef HAVE_SESSION_TICKET
@@ -7963,7 +7984,9 @@ int InitSSL(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
     ssl->secLevel = ctx->secLevel;
 #endif /* WOLFSSL_SYS_CRYPTO_POLICY */
     /* Returns 0 on success, not WOLFSSL_SUCCESS (1) */
+#ifndef WOLFSSL_SGX
     WOLFSSL_MSG_EX("InitSSL done. return 0 (success)");
+#endif
     return 0;
 }
 
@@ -15251,8 +15274,10 @@ int ProcessPeerCerts(WOLFSSL* ssl, byte* input, word32* inOutIdx,
                     args->exts[args->totalCerts].buffer = input + args->idx;
                     args->idx += extSz;
                     listSz -= extSz + OPAQUE16_LEN;
+#ifndef WOLFSSL_SGX
                     WOLFSSL_MSG_EX("\tParsing %d bytes of cert extensions",
                         args->exts[args->totalCerts].length);
+#endif
                     #if !defined(NO_TLS)
                     #if defined(HAVE_CERTIFICATE_STATUS_REQUEST)
                     ssl->response_idx = args->totalCerts;
@@ -21530,7 +21555,9 @@ static int DtlsShouldDrop(WOLFSSL* ssl, int retcode)
     if ((ssl->options.handShakeDone && retcode != 0)
         || retcode == WC_NO_ERR_TRACE(SEQUENCE_ERROR)
         || retcode == WC_NO_ERR_TRACE(DTLS_CID_ERROR)) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("Silently dropping DTLS message: %d", retcode);
+#endif
         return 1;
     }
 
@@ -21711,7 +21738,9 @@ static int DoProcessReplyEx(WOLFSSL* ssl, int allowSocketErr)
 
     ret = RetrySendAlert(ssl);
     if (ret != 0) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("RetrySendAlert failed, giving up. err = %d", ret);
+#endif
         return ret;
     }
 
@@ -25769,7 +25798,9 @@ static int SendAlert_ex(WOLFSSL* ssl, int severity, int type)
 
     WOLFSSL_ENTER("SendAlert");
 
+#ifndef WOLFSSL_SGX
     WOLFSSL_MSG_EX("SendAlert: %d %s", type, AlertTypeToString(type));
+#endif
 
 #ifdef WOLFSSL_QUIC
     if (WOLFSSL_IS_QUIC(ssl)) {
@@ -38102,7 +38133,9 @@ static int DoSessionTicket(WOLFSSL* ssl, const byte* input, word32* inOutIdx,
         ssl->options.haveSessionId = 1;
 
         /* ProcessOld uses same resume code */
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("ssl->options.resuming %d", ssl->options.resuming);
+#endif
         if (ssl->options.resuming) {
             ret = HandleTlsResumption(ssl, clSuites);
             if (ret != 0)
@@ -42450,8 +42483,10 @@ static int DoAppleNativeCertValidation(const WOLFSSL_BUFFER_INFO* certs,
     policy = SecPolicyCreateSSL(true, NULL);
     status = SecTrustCreateWithCertificates(certArray, policy, &trust);
     if (status != errSecSuccess) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("Error creating trust object, "
                        "SecTrustCreateWithCertificates returned %d",status);
+#endif
         ret = 0;
         goto cleanup;
     }

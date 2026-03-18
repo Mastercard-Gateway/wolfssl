@@ -650,6 +650,9 @@ WOLFSSL_ABI WOLFSSL_API int wolfCrypt_Cleanup(void);
     WOLFSSL_API long wolfCrypt_heap_peakBytes_checkpoint(void);
 #endif
 
+#ifdef WOLFSSL_SGX
+    int ft_ocall_close(int fd);
+#endif
 
 /* FILESYSTEM SECTION */
 /* filesystem abstraction layer, used by ssl.c */
@@ -915,7 +918,12 @@ WOLFSSL_ABI WOLFSSL_API int wolfCrypt_Cleanup(void);
             #define SEPARATOR_CHAR ';'
             #define XWRITE      write
             #define XREAD       read
+            #ifdef WOLFSSL_SGX
+            #define XCLOSE       ft_ocall_close
+            #define XFCLOSE      ft_ocall_close
+            #else
             #define XCLOSE      close
+            #endif
 
         #elif defined(WOLFSSL_TELIT_M2MB)
             #ifndef XSTAT
@@ -932,7 +940,12 @@ WOLFSSL_ABI WOLFSSL_API int wolfCrypt_Cleanup(void);
             #include <sys/stat.h>
             #define XWRITE      write
             #define XREAD       read
+            #ifdef WOLFSSL_SGX
+            #define XCLOSE      ft_ocall_close
+            #define XFCLOSE      ft_ocall_close
+            #else
             #define XCLOSE      close
+            #endif
             #ifndef XSTAT
             #define XSTAT       stat
             #endif

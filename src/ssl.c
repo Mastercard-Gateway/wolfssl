@@ -337,7 +337,9 @@ WC_RNG* wolfssl_make_global_rng(void)
     }
 #endif
 #else
-    WOLFSSL_ERROR_MSG("Bad RNG Init");
+    #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Bad RNG Init");
+#endif
     ret = NULL;
 #endif
 
@@ -1290,13 +1292,19 @@ WOLFSSL* wolfSSL_new(WOLFSSL_CTX* ctx)
     ssl = (WOLFSSL*) XMALLOC(sizeof(WOLFSSL), ctx->heap, DYNAMIC_TYPE_SSL);
 
     if (ssl == NULL) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("ssl xmalloc failed to allocate %d bytes",
                         (int)sizeof(WOLFSSL));
+#endif
     }
     else {
         ret = InitSSL(ssl, ctx, 0);
         if (ret < 0) {
-            WOLFSSL_MSG_EX("wolfSSL_new failed during InitSSL. err = %d", ret);
+#ifndef WOLFSSL_SGX
+            #ifndef WOLFSSL_SGX
+WOLFSSL_MSG_EX("wolfSSL_new failed during InitSSL. err = %d", ret);
+#endif
+#endif
             FreeSSL(ssl, ctx->heap);
             ssl = NULL;
         }
@@ -1305,8 +1313,10 @@ WOLFSSL* wolfSSL_new(WOLFSSL_CTX* ctx)
         }
         else {
             /* Only success (0) or negative values should ever be seen. */
+#ifndef WOLFSSL_SGX
             WOLFSSL_MSG_EX("WARNING: wolfSSL_new unexpected InitSSL return"
                            " value = %d", ret);
+#endif
         } /* InitSSL check */
     } /* ssl XMALLOC success */
 
@@ -1323,7 +1333,11 @@ void wolfSSL_free(WOLFSSL* ssl)
     WOLFSSL_ENTER("wolfSSL_free");
 
     if (ssl) {
-        WOLFSSL_MSG_EX("Free SSL: %p", (wc_ptr_t)ssl);
+#ifndef WOLFSSL_SGX
+        #ifndef WOLFSSL_SGX
+WOLFSSL_MSG_EX("Free SSL: %p", (wc_ptr_t)ssl);
+#endif
+#endif
         FreeSSL(ssl, ssl->ctx->heap);
     }
     else {
@@ -6172,7 +6186,11 @@ static int crypto_policy_parse(void)
 
     if (sec_level < MIN_WOLFSSL_SEC_LEVEL ||
         sec_level > MAX_WOLFSSL_SEC_LEVEL) {
-        WOLFSSL_MSG_EX("error: invalid SECLEVEL: %d", sec_level);
+#ifndef WOLFSSL_SGX
+        #ifndef WOLFSSL_SGX
+WOLFSSL_MSG_EX("error: invalid SECLEVEL: %d", sec_level);
+#endif
+#endif
         return WOLFSSL_BAD_FILE;
     }
 
@@ -6188,10 +6206,16 @@ static int crypto_policy_parse(void)
         }
     }
 
+#ifndef WOLFSSL_SGX
     #if defined(DEBUG_WOLFSSL_VERBOSE)
-    WOLFSSL_MSG_EX("info: SECLEVEL=%d", sec_level);
-    WOLFSSL_MSG_EX("info: using crypto-policy file: %s, %ld", policy_file, sz);
+    #ifndef WOLFSSL_SGX
+WOLFSSL_MSG_EX("info: SECLEVEL=%d", sec_level);
+#endif
+    #ifndef WOLFSSL_SGX
+WOLFSSL_MSG_EX("info: using crypto-policy file: %s, %ld", policy_file, sz);
+#endif
     #endif /* DEBUG_WOLFSSL_VERBOSE */
+#endif
 
     crypto_policy.secLevel = sec_level;
     crypto_policy.enabled = 1;
@@ -6228,8 +6252,10 @@ int wolfSSL_crypto_policy_enable(const char * policy_file)
     WOLFSSL_ENTER("wolfSSL_crypto_policy_enable");
 
     if (wolfSSL_crypto_policy_is_enabled()) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("error: crypto policy already enabled: %s",
                        policy_file);
+#endif
         return CRYPTO_POLICY_FORBIDDEN;
     }
 
@@ -6248,14 +6274,18 @@ int wolfSSL_crypto_policy_enable(const char * policy_file)
     file = XFOPEN(policy_file, "rb");
 
     if (file == XBADFILE) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("error: crypto policy file open failed: %s",
                        policy_file);
+#endif
         return WOLFSSL_BAD_FILE;
     }
 
     if (XFSEEK(file, 0, XSEEK_END) != 0) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("error: crypto policy file seek end failed: %s",
                        policy_file);
+#endif
         XFCLOSE(file);
         return WOLFSSL_BAD_FILE;
     }
@@ -6263,15 +6293,19 @@ int wolfSSL_crypto_policy_enable(const char * policy_file)
     sz = XFTELL(file);
 
     if (XFSEEK(file, 0, XSEEK_SET) != 0) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("error: crypto policy file seek failed: %s",
                        policy_file);
+#endif
         XFCLOSE(file);
         return WOLFSSL_BAD_FILE;
     }
 
     if (sz <= 0 || sz > MAX_WOLFSSL_CRYPTO_POLICY_SIZE) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("error: crypto policy file %s, invalid size: %ld",
                        policy_file, sz);
+#endif
         XFCLOSE(file);
         return WOLFSSL_BAD_FILE;
     }
@@ -6280,8 +6314,10 @@ int wolfSSL_crypto_policy_enable(const char * policy_file)
     XFCLOSE(file);
 
     if (n_read != (size_t) sz) {
+#ifndef WOLFSSL_SGX
         WOLFSSL_MSG_EX("error: crypto policy file %s: read %zu, "
                        "expected %ld", policy_file, n_read, sz);
+#endif
         return WOLFSSL_BAD_FILE;
     }
 
@@ -6305,7 +6341,11 @@ int wolfSSL_crypto_policy_enable_buffer(const char * buf)
     WOLFSSL_ENTER("wolfSSL_crypto_policy_enable_buffer");
 
     if (wolfSSL_crypto_policy_is_enabled()) {
-        WOLFSSL_MSG_EX("error: crypto policy already enabled");
+#ifndef WOLFSSL_SGX
+        #ifndef WOLFSSL_SGX
+WOLFSSL_MSG_EX("error: crypto policy already enabled");
+#endif
+#endif
         return CRYPTO_POLICY_FORBIDDEN;
     }
 
@@ -19918,7 +19958,11 @@ void* wolfSSL_GetHKDFExtractCtx(WOLFSSL* ssl)
                 return obj_info->sName;
             }
         }
-        WOLFSSL_MSG_EX("SN not found (nid:%d)",n);
+#ifndef WOLFSSL_SGX
+        #ifndef WOLFSSL_SGX
+WOLFSSL_MSG_EX("SN not found (nid:%d)",n);
+#endif
+#endif
         return NULL;
     }
 
@@ -22627,7 +22671,11 @@ int wolfSSL_curve_is_disabled(const WOLFSSL* ssl, word16 curve_id)
     int ret = 0;
 
     WOLFSSL_ENTER("wolfSSL_curve_is_disabled");
-    WOLFSSL_MSG_EX("wolfSSL_curve_is_disabled checking for %d", curve_id);
+#ifndef WOLFSSL_SGX
+    #ifndef WOLFSSL_SGX
+WOLFSSL_MSG_EX("wolfSSL_curve_is_disabled checking for %d", curve_id);
+#endif
+#endif
 
     /* (curve_id >= WOLFSSL_FFDHE_START) - DH parameters are never disabled. */
     if (curve_id < WOLFSSL_FFDHE_START) {
@@ -22800,8 +22848,10 @@ int set_curves_list(WOLFSSL* ssl, WOLFSSL_CTX *ctx, const char* names,
         }
         if (i >= groups_len) {
             if (groups_len >= WOLFSSL_MAX_GROUP_COUNT) {
+#ifndef WOLFSSL_SGX
                 WOLFSSL_MSG_EX("setting %d or more supported "
                                "curves is not permitted", groups_len);
+#endif
                 goto leave;
             }
             groups[groups_len++] = (int)curve;

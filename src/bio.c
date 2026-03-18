@@ -24,6 +24,17 @@
 #endif
 
 #include <wolfssl/wolfcrypt/settings.h>
+
+#include <wolfssl/wolfcrypt/wc_port.h>
+
+//#ifndef FT_OCALL_CLOSE
+//int ft_ocall_close(int fd){
+//    int result = -1;
+//    ocall_close(fd,&result);
+//    return result;
+//}
+//#endif
+
 #if defined(OPENSSL_EXTRA) && !defined(_WIN32) && !defined(_GNU_SOURCE)
     /* turn on GNU extensions for XVASPRINTF with wolfSSL_BIO_printf */
     #define _GNU_SOURCE 1
@@ -69,6 +80,9 @@ static int wolfSSL_BIO_BASE64_read(WOLFSSL_BIO* bio, void* buf, int len)
  */
 static int wolfSSL_BIO_BIO_read(WOLFSSL_BIO* bio, void* buf, int len)
 {
+#ifdef WOLFSSL_SGX
+    ocall_eprintln_message("WOLF_READ\0",16);
+#endif
     int   sz1;
     int   sz2;
     char* pt;
@@ -3009,12 +3023,15 @@ int wolfSSL_BIO_flush(WOLFSSL_BIO* bio)
                 bio->shutdown == WOLFSSL_BIO_CLOSE)
             {
                 if (bio->ptr.fh) {
-                    XFCLOSE(bio->ptr.fh);
+                    //XFCLOSE(bio->ptr.fh);
                 }
             #if !defined(USE_WINDOWS_API) && !defined(NO_WOLFSSL_DIR)\
                 && !defined(WOLFSSL_NUCLEUS) && !defined(WOLFSSL_NUCLEUS_1_2)
                 else if (bio->num.fd != SOCKET_INVALID) {
-                    XCLOSE(bio->num.fd);
+#ifdef WOLFSSL_SGX
+                    ft_ocall_close(bio->num.fd);
+#endif
+
                 }
             #endif
             }

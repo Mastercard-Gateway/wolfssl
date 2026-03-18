@@ -1,5 +1,6 @@
 /* logging.c
  *
+ *
  * Copyright (C) 2006-2024 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
@@ -129,7 +130,7 @@ static wolfSSL_Logging_cb log_function = NULL;
 #ifndef WOLFSSL_LOGGINGENABLED_DEFAULT
 #define WOLFSSL_LOGGINGENABLED_DEFAULT 0
 #endif
-static int loggingEnabled = WOLFSSL_LOGGINGENABLED_DEFAULT;
+static int loggingEnabled = 0;//WOLFSSL_LOGGINGENABLED_DEFAULT;
 THREAD_LS_T const char* log_prefix = NULL;
 
 #if defined(WOLFSSL_APACHE_MYNEWT)
@@ -165,7 +166,7 @@ wolfSSL_Logging_cb wolfSSL_GetLoggingCb(void)
 int wolfSSL_Debugging_ON(void)
 {
 #ifdef DEBUG_WOLFSSL
-    loggingEnabled = 1;
+    loggingEnabled = 0;
 #if defined(WOLFSSL_APACHE_MYNEWT)
     log_register("wolfcrypt", &mynewt_log, &log_console_handler, NULL, LOG_SYSLEVEL);
 #endif /* WOLFSSL_APACHE_MYNEWT */
@@ -407,6 +408,7 @@ __attribute__((__format__ (__printf__, 1, 0)))
 #endif
 void WOLFSSL_MSG_EX(const char* fmt, ...)
 {
+#ifndef WOLFSSL_SGX
     if (loggingEnabled) {
         char msg[WOLFSSL_MSG_EX_BUF_SZ];
         int written;
@@ -417,6 +419,7 @@ void WOLFSSL_MSG_EX(const char* fmt, ...)
         if (written > 0)
             wolfssl_log(INFO_LOG, NULL, 0, msg);
     }
+#endif
 }
 
 #ifdef WOLFSSL_DEBUG_CODEPOINTS
@@ -440,8 +443,10 @@ void WOLFSSL_MSG_EX2(const char *file, int line, const char* fmt, ...)
 #undef WOLFSSL_MSG /* undo WOLFSSL_DEBUG_CODEPOINTS wrapper */
 void WOLFSSL_MSG(const char* msg)
 {
+#ifndef WOLFSSL_SGX
     if (loggingEnabled)
         wolfssl_log(INFO_LOG, NULL, 0, msg);
+#endif
 }
 
 #ifdef WOLFSSL_DEBUG_CODEPOINTS
@@ -463,7 +468,7 @@ void WOLFSSL_BUFFER(const byte* buffer, word32 length)
     if (!loggingEnabled) {
         return;
     }
-
+#ifndef WOLFSSL_SGX
     if (!buffer) {
         wolfssl_log(INFO_LOG, NULL, 0, "\tNULL");
         return;
@@ -527,11 +532,13 @@ void WOLFSSL_BUFFER(const byte* buffer, word32 length)
 errout:
 
     wolfssl_log(INFO_LOG, NULL, 0, "\t[Buffer error while rendering]");
+#endif
 }
 
 #undef WOLFSSL_ENTER /* undo WOLFSSL_DEBUG_CODEPOINTS wrapper */
 void WOLFSSL_ENTER(const char* msg)
 {
+#ifndef WOLFSSL_SGX
     if (loggingEnabled) {
         char buffer[WOLFSSL_MAX_ERROR_SZ];
         if (XSNPRINTF(buffer, sizeof(buffer), "wolfSSL Entering %s", msg)
@@ -541,6 +548,7 @@ void WOLFSSL_ENTER(const char* msg)
         }
         wolfssl_log(ENTER_LOG, NULL, 0, buffer);
     }
+#endif
 }
 
 #ifdef WOLFSSL_DEBUG_CODEPOINTS
@@ -561,6 +569,7 @@ void WOLFSSL_ENTER2(const char *file, int line, const char* msg)
 #undef WOLFSSL_LEAVE /* undo WOLFSSL_DEBUG_CODEPOINTS wrapper */
 void WOLFSSL_LEAVE(const char* msg, int ret)
 {
+#ifndef WOLFSSL_SGX
     if (loggingEnabled) {
         char buffer[WOLFSSL_MAX_ERROR_SZ];
         if (XSNPRINTF(buffer, sizeof(buffer), "wolfSSL Leaving %s, return %d",
@@ -571,6 +580,7 @@ void WOLFSSL_LEAVE(const char* msg, int ret)
         }
         wolfssl_log(LEAVE_LOG, NULL, 0, buffer);
     }
+#endif
 }
 
 #ifdef WOLFSSL_DEBUG_CODEPOINTS
@@ -1652,6 +1662,7 @@ void WOLFSSL_ERROR_LINE(int error, const char* func, unsigned int line,
 void WOLFSSL_ERROR(int error)
 #endif
 {
+#ifndef WOLFSSL_SGX
 #ifdef WOLFSSL_ASYNC_CRYPT
     if (error != WC_NO_ERR_TRACE(WC_PENDING_E))
 #endif
@@ -1709,14 +1720,16 @@ void WOLFSSL_ERROR(int error)
 
 void WOLFSSL_ERROR_MSG(const char* msg)
 {
+#ifndef WOLFSSL_SGX
 #ifdef DEBUG_WOLFSSL
     if (loggingEnabled)
         wolfssl_log(ERROR_LOG, NULL, 0, msg);
 #else
     (void)msg;
 #endif
+#endif
+#endif //WOLFSSL_SGX
 }
-
 #endif  /* DEBUG_WOLFSSL || WOLFSSL_NGINX || WOLFSSL_HAPROXY */
 
 #ifdef WOLFSSL_DEBUG_BACKTRACE_ERROR_CODES

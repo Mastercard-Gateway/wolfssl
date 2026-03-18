@@ -835,6 +835,13 @@ struct WOLFSSL_X509_STORE {
     #define WOLFSSL_MAX_IPSTR 46 /* max ip size IPv4 mapped IPv6 */
 #endif
 
+//TODO(Fausto): Hack for SGX + OPENSSL_EXSTRA
+#ifdef WOLFSSL_SGX
+typedef long int time_t;
+#define AF_INET   2      /* IPv4 */
+#define AF_INET6  10     /* IPv6 */
+#endif
+
 struct WOLFSSL_X509_VERIFY_PARAM {
     const char    *name;
     time_t         check_time;

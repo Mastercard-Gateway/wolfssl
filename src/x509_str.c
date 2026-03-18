@@ -306,10 +306,12 @@ int GetX509Error(int e)
         case 1:
             return 0;
         default:
+#ifndef WOLFSSL_SGX
 #ifdef HAVE_WOLFSSL_MSG_EX
             WOLFSSL_MSG_EX("Error not configured or implemented yet: %d", e);
 #else
             WOLFSSL_MSG("Error not configured or implemented yet");
+#endif
 #endif
             return e;
     }

@@ -150,6 +150,17 @@
 #endif
 #endif
 
+#ifdef WOLFSSL_SGX
+#ifndef FT_OCALL_CLOSE
+#define FT_OCALL_CLOSE
+    int ft_ocall_close(int fd){
+        int result = -1;
+        ocall_close(fd,&result);
+        return result;
+    }
+#endif
+#endif
+
 /* prevent multiple mutex initializations */
 static volatile int initRefCount = 0;
 

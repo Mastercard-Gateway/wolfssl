@@ -1,6 +1,6 @@
 ######## Intel(R) SGX SDK Settings ########
 SGX_SDK ?= /opt/intel/sgxsdk
-SGX_MODE ?= SIM
+SGX_MODE ?= HW
 SGX_ARCH ?= x64
 WOLFSSL_ROOT ?= $(shell readlink -f ../..)
 
@@ -108,9 +108,12 @@ ifeq ($(HAVE_WOLFSSL_BENCHMARK), 1)
 	Wolfssl_Include_Paths += -I$(WOLFSSL_ROOT)/wolfcrypt/benchmark/
 endif
 
+# From prepare_wolf.sh
+# Wolfssl_C_Extra_Flags_Intel_SGX="-DWOLFSSL_SGX   -DWOLFSSL_NO_GETPID -DWOLFSSL_SP_X86_64_ASM -DWOLFSSL_SP_X86_64 -DWOLFSSL_SP_ASM -DWOLFSSL_HAVE_SP_RSA  -DWOLFSSL_HAVE_SP_DH   -DWOLFSSL_HAVE_SP_ECC"
 ifeq ($(HAVE_WOLFSSL_SP), 1)
     Wolfssl_C_Extra_Flags += -DWOLFSSL_HAVE_SP_RSA \
                              -DWOLFSSL_HAVE_SP_DH  \
+                             -DHAVE_TLS_EXTENSIONS -DHAVE_SNI -DWOLF_NO_VARIADIC_MACROS -DNO_WOLFSSL_MSG_EX -DWOLFSSL_AES_DIRECT -DWOLFSSL_SP_4096 -DWC_RSA_PSS -DWOLFSSL_SHA384 -DWOLFSSL_SHA512 -DHAVE_AESGCM -DOPENSSL_EXTRA -DWOLFSSL_CERT_GEN -DWOLFSSL_KEY_GEN -DWOLFSSL_ASN_ALL \
                              -DWOLFSSL_HAVE_SP_ECC
 endif
 

@@ -28,6 +28,12 @@
 
 #include <wolfssl/ssl.h>
 
+#ifdef WOLFSSL_SGX
+int ft_sgx_send(int sockfd, void *buf, size_t size, int flags);
+int ft_sgx_recv(int sockfd, void *buf, size_t size,int flags);
+int ft_ocall_inet_pton(int af, const char *restrict src, void *restrict dst);
+#endif
+
 #ifdef __cplusplus
     extern "C" {
 #endif
@@ -394,8 +400,8 @@
     #define SEND_FUNCTION linuxkm_send
     #define RECV_FUNCTION linuxkm_recv
 #elif defined(WOLFSSL_SGX)
-    #define SEND_FUNCTION send
-    #define RECV_FUNCTION recv
+    #define SEND_FUNCTION ft_sgx_send
+    #define RECV_FUNCTION ft_sgx_recv
 #else
     #define SEND_FUNCTION send
     #define RECV_FUNCTION recv
@@ -511,7 +517,11 @@ WOLFSSL_API  int wolfIO_RecvFrom(SOCKET_T sd, WOLFSSL_BIO_ADDR *addr, char *buf,
     #define StartTCP() WC_DO_NOTHING
 #else
     #ifndef CloseSocket
+#ifndef WOLFSSL_SGX
         #define CloseSocket(s) close(s)
+#else
+        #define CloseSocket(s) ft_ocall_close(s)
+#endif
     #endif
     #define StartTCP() WC_DO_NOTHING
     #ifdef FREERTOS_TCP_WINSIM
@@ -833,8 +843,6 @@ WOLFSSL_API void wolfSSL_SetIOWriteFlags(WOLFSSL* ssl, int flags);
                                                   unsigned short port, int fam);
 #endif /* WOLFSSL_SESSION_EXPORT */
 
-
-
 #ifndef XINET_NTOP
     #define XINET_NTOP(a,b,c,d) inet_ntop((a),(b),(c),(d))
     #ifdef USE_WINDOWS_API /* Windows-friendly definition */
@@ -843,7 +851,11 @@ WOLFSSL_API void wolfSSL_SetIOWriteFlags(WOLFSSL* ssl, int flags);
     #endif
 #endif
 #ifndef XINET_PTON
+    #ifdef WOLFSSL_SGX
+    #define XINET_PTON(a,b,c)   ft_ocall_inet_pton((a),(b),(c))
+    #else
     #define XINET_PTON(a,b,c)   inet_pton((a),(b),(c))
+    #endif
     #ifdef USE_WINDOWS_API /* Windows-friendly definition */
         #undef  XINET_PTON
         #if defined(__MINGW64__) && !defined(UNICODE)

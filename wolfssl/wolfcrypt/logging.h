@@ -29,7 +29,6 @@
 
 #ifndef WOLFSSL_LOGGING_H
 #define WOLFSSL_LOGGING_H
-
 #include <wolfssl/wolfcrypt/types.h>
 
 #ifdef __cplusplus
@@ -208,7 +207,8 @@ WOLFSSL_API void wolfSSL_SetLoggingPrefix(const char* prefix);
         #endif
     #endif
 #endif
-    WOLFSSL_API void WOLFSSL_BUFFER(const byte* buffer, word32 length);
+        WOLFSSL_API void WOLFSSL_BUFFER(const byte* buffer, word32 length);
+
 
 #else
 
@@ -248,12 +248,12 @@ WOLFSSL_API void wolfSSL_SetLoggingPrefix(const char* prefix);
     #endif /* WOLFSSL_HAVE_ERROR_QUEUE */
 
     WOLFSSL_API void WOLFSSL_ERROR_MSG(const char* msg);
+
 #else
     #define WOLFSSL_ERROR(e) (void)(e)
     #define WOLFSSL_ERROR_MSG(m) (void)(m)
 #endif /* DEBUG_WOLFSSL | OPENSSL_ALL || WOLFSSL_NGINX || WOLFSSL_HAPROXY ||
           OPENSSL_EXTRA */
-
 #ifdef WOLFSSL_VERBOSE_ERRORS
 #define WOLFSSL_ERROR_VERBOSE(e) WOLFSSL_ERROR(e)
 #else

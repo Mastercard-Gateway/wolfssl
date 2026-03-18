@@ -2801,8 +2801,10 @@ static int wc_RsaFunctionSync(const byte* in, word32 inLen, byte* out,
 
     ret = wc_RsaEncryptSize(key);
     if (ret < 0) {
+#ifndef WOLFSSL_SGX
 #ifdef DEBUG_WOLFSSL
         WOLFSSL_MSG_EX("wc_RsaEncryptSize failed err = %d", ret);
+#endif
 #endif
         return ret;
     }

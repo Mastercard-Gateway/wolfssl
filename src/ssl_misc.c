@@ -58,7 +58,9 @@ static int wolfssl_read_bio_file(WOLFSSL_BIO* bio, char** data)
     /* Allocate buffer to hold a chunk of data. */
     mem = (char*)XMALLOC(READ_BIO_FILE_CHUNK, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (mem == NULL) {
-        WOLFSSL_ERROR_MSG("Memory allocation error");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Memory allocation error");
+#endif
         ret = MEMORY_E;
     }
 
@@ -133,7 +135,9 @@ static int wolfssl_read_bio_len(WOLFSSL_BIO* bio, int sz, char** data)
     /* Allocate buffer to hold data. */
     mem = (char*)XMALLOC((size_t)sz, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (mem == NULL) {
-        WOLFSSL_ERROR_MSG("Memory allocation error");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Memory allocation error");
+#endif
         ret = MEMORY_E;
     }
     else if ((ret = wolfSSL_BIO_read(bio, mem, sz)) != sz) {
@@ -200,7 +204,9 @@ static int wolfssl_read_bio(WOLFSSL_BIO* bio, char** data, int* dataSz,
     }
 #endif
     else {
-        WOLFSSL_ERROR_MSG("No data read from bio");
+        #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("No data read from bio");
+#endif
         *memAlloced = 0;
         ret = NOT_COMPILED_IN;
     }

@@ -8052,7 +8052,9 @@ void wolfSSL_EVP_init(void)
     {
         WOLFSSL_ENTER("wolfSSL_EVP_CIPHER_CTX_nid");
         if (ctx == NULL) {
-            WOLFSSL_ERROR_MSG("Bad parameters");
+            #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Bad parameters");
+#endif
             return WC_NID_undef;
         }
 
@@ -8163,7 +8165,9 @@ void wolfSSL_EVP_init(void)
 #endif
 
             case WC_NULL_CIPHER_TYPE :
-                WOLFSSL_ERROR_MSG("Null cipher has no NID");
+                #ifndef WOLFSSL_SGX
+WOLFSSL_ERROR_MSG("Null cipher has no NID");
+#endif
                 FALL_THROUGH;
             default:
                 return WC_NID_undef;
