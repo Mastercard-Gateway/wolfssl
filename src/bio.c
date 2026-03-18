@@ -27,14 +27,6 @@
 
 #include <wolfssl/wolfcrypt/wc_port.h>
 
-// #ifndef FT_OCALL_CLOSE
-// int ft_ocall_close(int fd){
-//     int result = -1;
-//     ocall_close(fd,&result);
-//     return result;
-// }
-// #endif
-
 #if defined(OPENSSL_EXTRA) && !defined(_WIN32) && !defined(_GNU_SOURCE)
 /* turn on GNU extensions for XVASPRINTF with wolfSSL_BIO_printf */
 #define _GNU_SOURCE 1
@@ -2820,12 +2812,14 @@ int wolfSSL_BIO_free(WOLFSSL_BIO *bio) {
 #ifndef NO_FILESYSTEM
     if (bio->type == WOLFSSL_BIO_FILE && bio->shutdown == WOLFSSL_BIO_CLOSE) {
       if (bio->ptr.fh) {
-        // XFCLOSE(bio->ptr.fh);
+        XFCLOSE(bio->ptr.fh);
       }
 #if !defined(USE_WINDOWS_API) && !defined(NO_WOLFSSL_DIR) &&                   \
     !defined(WOLFSSL_NUCLEUS) && !defined(WOLFSSL_NUCLEUS_1_2)
       else if (bio->num.fd != SOCKET_INVALID) {
-#ifdef WOLFSSL_SGX
+#ifndef WOLFSSL_SGX
+        XCLOSE(bio->num.fd);
+#else
         ft_ocall_close(bio->num.fd);
 #endif
       }
