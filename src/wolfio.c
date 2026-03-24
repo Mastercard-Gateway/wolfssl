@@ -59,7 +59,7 @@ int ft_sgx_send(int sockfd, void *buf, size_t size, int flags){
     memcpy(malloc_buf,buf,size);
     int ret = ocall_send(retval,sockfd,size,flags,buf);
     XFREE(malloc_buf, NULL, DYNAMIC_TYPE_TMP_BUFFER);
-    sent = (int)(retval[0]);
+    int sent = (int)(retval[0]);
     XFREE(retval,NULL, DYNAMIC_TYPE_TMP_BUFFER);
     sent = TranslateIoReturnCode(sent, sockfd, SOCKET_SENDING);
     return sent;
@@ -68,10 +68,8 @@ int ft_sgx_send(int sockfd, void *buf, size_t size, int flags){
 int ft_sgx_recv(int sockfd, void *buf, size_t size,int flags){
     int *retval = (int*)XMALLOC(sizeof(int),NULL, DYNAMIC_TYPE_TMP_BUFFER);
     memset(retval,0,sizeof(int));
-    //char *malloc_buf = (char *)XMALLOC(size, NULL, DYNAMIC_TYPE_TMP_BUFFER);
-    //memset(malloc_buf,0,size);
     int ret = ocall_recv(retval,sockfd,size,flags,buf);
-    recvd  = (int)(retval[0]);
+    int recvd  = (int)(retval[0]);
     XFREE(retval,NULL, DYNAMIC_TYPE_TMP_BUFFER);
     recvd = TranslateIoReturnCode(recvd, sockfd, SOCKET_RECEIVING);
     return recvd;
